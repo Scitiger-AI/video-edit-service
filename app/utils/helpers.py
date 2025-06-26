@@ -288,7 +288,7 @@ class FileUtils:
             # 添加相对URL和下载URL
             relative_url, download_url, url = cls.get_urls_from_path(file_path)
             result_copy["file_url"] = relative_url
-            result_copy["url"] = url
+            result_copy["full_url"] = url
             result_copy["download_url"] = download_url
             
         # 处理output_paths字段（如果存在）
@@ -316,7 +316,7 @@ class FileUtils:
                     file_path = part["path"]
                     relative_url, download_url, url = cls.get_urls_from_path(file_path)
                     part["file_url"] = relative_url
-                    part["url"] = url
+                    part["full_url"] = url
                     part["download_url"] = download_url
                     # 保留原始路径
         
@@ -359,11 +359,11 @@ class FileUtils:
             encoded_name = quote(file_name)
             download_url = f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{encoded_name}"
             media_base_path = f"{settings.MEDIA_BASE_PATH}/{relative_url}"
-            return media_base_path, download_url, f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{media_base_path}"
+            return media_base_path, download_url, f"{settings.SERVICE_BASE_URL}/{media_base_path}"
             
         except Exception as e:
             logger.error(f"转换文件路径到URL时出错: {str(e)}")
             # 出错时返回文件名
             file_name = os.path.basename(file_path)
             media_base_path = f"{settings.MEDIA_BASE_PATH}/{file_name}"
-            return media_base_path, f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{file_name}", f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{media_base_path}"
+            return media_base_path, f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{file_name}", f"{settings.SERVICE_BASE_URL}/{media_base_path}"
