@@ -1,4 +1,4 @@
-# Video Edit Service
+# SciTiger 视频编辑服务
 
 视频编辑服务是 SciTiger AI模型调用微服务体系的一部分，提供视频剪辑、滤镜效果、转场效果等功能，通过统一的API接口进行调用。
 
@@ -122,6 +122,84 @@ celery -A app.core.celery_app worker --loglevel=info
 ```
 
 ## API使用
+
+### 上传文件接口
+
+#### 单文件上传
+
+```
+POST /api/v1/upload/
+```
+
+请求参数：
+- `file`：要上传的文件（表单字段）
+- `category`：文件分类（可选，如不提供将自动判断）
+
+响应示例：
+```json
+{
+  "success": true,
+  "message": "文件上传成功",
+  "data": {
+    "filename": "20240620_123456_a1b2c3d4.mp4",
+    "original_filename": "my_video.mp4",
+    "size": 1024000,
+    "content_type": "video/mp4",
+    "category": "videos",
+    "media_url": "/media/videos/20240620_123456_a1b2c3d4.mp4",
+    "full_url": "http://127.0.0.1:8084/media/videos/20240620_123456_a1b2c3d4.mp4",
+    "download_url": "http://127.0.0.1:8084/api/v1/download/20240620_123456_a1b2c3d4.mp4"
+  }
+}
+```
+
+**文件类别自动判断**：
+- 如果不提供`category`参数，系统将根据文件类型自动判断适合的分类
+- 图片文件（jpg, png, gif等）→ `images`
+- 视频文件（mp4, avi, mov等）→ `videos`
+- 音频文件（mp3, wav等）→ `audio`
+- 文档文件（pdf, doc, txt等）→ `documents`
+- 无法判断的文件 → `general`
+
+#### 批量文件上传
+
+```
+POST /api/v1/upload/batch
+```
+
+请求参数：
+- `files`：要上传的文件列表（表单字段）
+- `category`：文件分类（可选，如不提供将对每个文件自动判断）
+
+响应示例：
+```json
+{
+  "success": true,
+  "message": "成功上传 2 个文件",
+  "data": [
+    {
+      "filename": "20240620_123456_a1b2c3d4.mp4",
+      "original_filename": "video1.mp4",
+      "size": 1024000,
+      "content_type": "video/mp4",
+      "category": "videos",
+      "media_url": "/media/videos/20240620_123456_a1b2c3d4.mp4",
+      "full_url": "http://127.0.0.1:8084/media/videos/20240620_123456_a1b2c3d4.mp4",
+      "download_url": "http://127.0.0.1:8084/api/v1/download/20240620_123456_a1b2c3d4.mp4"
+    },
+    {
+      "filename": "20240620_123500_e5f6g7h8.mp4",
+      "original_filename": "video2.mp4",
+      "size": 2048000,
+      "content_type": "video/mp4",
+      "category": "videos",
+      "media_url": "/media/videos/20240620_123500_e5f6g7h8.mp4",
+      "full_url": "http://127.0.0.1:8084/media/videos/20240620_123500_e5f6g7h8.mp4",
+      "download_url": "http://127.0.0.1:8084/api/v1/download/20240620_123500_e5f6g7h8.mp4"
+    }
+  ]
+}
+```
 
 ### 创建视频剪辑任务
 

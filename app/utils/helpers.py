@@ -366,4 +366,4 @@ class FileUtils:
             # 出错时返回文件名
             file_name = os.path.basename(file_path)
             media_base_path = f"{settings.MEDIA_BASE_PATH}/{file_name}"
-            return media_base_path, f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{file_name}", f"{settings.SERVICE_BASE_URL}/{media_base_path}"
+            return media_base_path, f"{settings.MEDIA_DOWNLOAD_BASE_URL}/{file_name}", f"{settings.SERVICE_BASE_URL}{media_base_path}"

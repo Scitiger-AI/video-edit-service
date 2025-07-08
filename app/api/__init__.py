@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from . import health, tasks, models, download
+from . import health, tasks, models, download, upload
 
 api_router = APIRouter()
 
@@ -14,3 +14,6 @@ api_router.include_router(models.router, prefix="/models", tags=["models"])
 
 # 添加文件下载路由
 api_router.include_router(download.router, prefix="/download", tags=["download"])
+
+# 添加文件上传路由
+api_router.include_router(upload.router, prefix="/upload", tags=["upload"])
