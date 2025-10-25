@@ -139,7 +139,7 @@ def should_skip_auth(request: Request) -> bool:
                   f"{settings.API_V1_STR}/health",
                   f"{settings.API_V1_STR}/test",
                   f"{settings.API_V1_STR}/download", 
-                  f"{settings.API_V1_STR}/upload",
+                #   f"{settings.API_V1_STR}/upload",
                   "/media"]  # 添加媒体文件路径
     
     # 使用前缀匹配而不是精确匹配

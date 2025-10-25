@@ -11,6 +11,7 @@ class TaskStatus(str, Enum):
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
+    RETRYING = "retrying"
 
 
 class PyObjectId(ObjectId):
@@ -69,7 +70,9 @@ class TaskModel:
             "parameters": parameters,
             "is_async": is_async,
             "result": None,
-            "error": None
+            "error": None,
+            "retry_count": 0,
+            "retry_info": None
         }
     
     @staticmethod
@@ -122,5 +125,25 @@ class TaskModel:
         return {
             "status": TaskStatus.FAILED.value,
             "error": error,
+            "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+    
+    @staticmethod
+    def update_retry(task: dict, retry_count: int, retry_info: str) -> dict:
+        """
+        更新任务重试信息
+        
+        Args:
+            task: 任务数据
+            retry_count: 重试次数
+            retry_info: 重试信息
+            
+        Returns:
+            dict: 更新数据
+        """
+        return {
+            "status": TaskStatus.RETRYING.value,
+            "retry_count": retry_count,
+            "retry_info": retry_info,
             "updated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         } 

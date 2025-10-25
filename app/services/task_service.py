@@ -75,7 +75,9 @@ class TaskService:
             "task_id": task["_id"],
             "status": task["status"],
             "created_at": task["created_at"],
-            "updated_at": task["updated_at"]
+            "updated_at": task["updated_at"],
+            "retry_count": task.get("retry_count", 0),
+            "retry_info": task.get("retry_info")
         }
     
     async def get_task_result(self, task_id: str) -> Optional[Dict[str, Any]]:
@@ -98,7 +100,9 @@ class TaskService:
             "task_id": task["_id"],
             "status": task["status"],
             "result": task.get("result"),
-            "error": task.get("error")
+            "error": task.get("error"),
+            "retry_count": task.get("retry_count", 0),
+            "retry_info": task.get("retry_info")
         }
         
         # 转换结果中的文件路径为URL

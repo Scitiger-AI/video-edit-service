@@ -27,6 +27,8 @@ class TaskStatusResponse(BaseModel):
     status: str = Field(..., description="任务状态")
     created_at: datetime = Field(..., description="创建时间")
     updated_at: datetime = Field(..., description="更新时间")
+    retry_count: Optional[int] = Field(default=None, description="重试次数")
+    retry_info: Optional[str] = Field(default=None, description="重试信息")
 
 
 class TaskResultResponse(BaseModel):
@@ -36,6 +38,8 @@ class TaskResultResponse(BaseModel):
     status: str = Field(..., description="任务状态")
     result: Optional[Any] = Field(default=None, description="任务结果")
     error: Optional[str] = Field(default=None, description="错误信息")
+    retry_count: Optional[int] = Field(default=None, description="重试次数")
+    retry_info: Optional[str] = Field(default=None, description="重试信息")
 
 
 class TaskListItem(BaseModel):

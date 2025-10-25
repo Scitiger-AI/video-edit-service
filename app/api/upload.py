@@ -67,6 +67,7 @@ async def determine_category(file: UploadFile, user_category: Optional[str] = No
     return "general"
 
 @router.post("/")
+@requires_permission(resource="upload", action="create")
 async def upload_file(
     file: UploadFile = File(...),
     category: Optional[str] = None,
@@ -137,6 +138,7 @@ async def upload_file(
         )
 
 @router.post("/batch")
+@requires_permission(resource="upload", action="create")
 async def batch_upload_files(
     files: List[UploadFile] = File(...),
     category: Optional[str] = None,

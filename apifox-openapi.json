@@ -1,0 +1,924 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "SciTiger 视频编辑服务 API",
+    "version": "1.0.0",
+    "description": "SciTiger 视频编辑服务提供视频剪辑、滤镜效果、转场效果和自动剪辑等功能。支持多种视频处理操作，通过统一的API接口进行调用。",
+    "contact": {
+      "name": "SciTiger Team",
+      "url": "https://scitiger.cn"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8084",
+      "description": "本地开发服务器"
+    },
+    {
+      "url": "http://service.scitiger.cn/video-edit-service",
+      "description": "生产环境服务器"
+    }
+  ],
+  "tags": [
+    {
+      "name": "health",
+      "description": "健康检查接口"
+    },
+    {
+      "name": "upload",
+      "description": "文件上传接口"
+    },
+    {
+      "name": "download",
+      "description": "文件下载接口"
+    },
+    {
+      "name": "tasks",
+      "description": "任务管理接口"
+    },
+    {
+      "name": "models",
+      "description": "模型查询接口"
+    }
+  ],
+  "paths": {
+    "/api/v1/health/": {
+      "get": {
+        "tags": ["health"],
+        "summary": "健康检查",
+        "description": "检查服务是否正常运行，以及MongoDB连接状态",
+        "operationId": "health_check",
+        "responses": {
+          "200": {
+            "description": "服务正常",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResponseBase"
+                },
+                "example": {
+                  "success": true,
+                  "message": "Service is healthy. MongoDB: connected"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/upload/": {
+      "post": {
+        "tags": ["upload"],
+        "summary": "上传单个文件",
+        "description": "上传单个文件到服务器，支持自动判断文件类别（视频、音频、图片等）",
+        "operationId": "upload_file",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "要上传的文件"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "文件分类（可选），如不提供将自动判断",
+                    "enum": ["videos", "images", "audio", "documents", "general"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "文件上传成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "文件上传成功",
+                  "data": {
+                    "filename": "20240620_123456_a1b2c3d4.mp4",
+                    "original_filename": "my_video.mp4",
+                    "size": 1024000,
+                    "content_type": "video/mp4",
+                    "category": "videos",
+                    "media_url": "/media/videos/20240620_123456_a1b2c3d4.mp4",
+                    "full_url": "http://127.0.0.1:8084/media/videos/20240620_123456_a1b2c3d4.mp4",
+                    "download_url": "http://127.0.0.1:8084/api/v1/download/20240620_123456_a1b2c3d4.mp4"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/upload/batch": {
+      "post": {
+        "tags": ["upload"],
+        "summary": "批量上传文件",
+        "description": "批量上传多个文件到服务器",
+        "operationId": "batch_upload_files",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["files"],
+                "properties": {
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    },
+                    "description": "要上传的文件列表"
+                  },
+                  "category": {
+                    "type": "string",
+                    "description": "文件分类（可选）",
+                    "enum": ["videos", "images", "audio", "documents", "general"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "文件批量上传成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchUploadResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/download/{file_name}": {
+      "get": {
+        "tags": ["download"],
+        "summary": "下载文件",
+        "description": "通过文件名下载文件",
+        "operationId": "download_file",
+        "parameters": [
+          {
+            "name": "file_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "要下载的文件名"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "文件下载成功",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "文件不存在"
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/": {
+      "post": {
+        "tags": ["tasks"],
+        "summary": "创建视频编辑任务",
+        "description": "创建新的视频编辑任务，支持剪辑、滤镜、转场和自动剪辑等操作",
+        "operationId": "create_task",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TaskCreate"
+              },
+              "examples": {
+                "trim_video": {
+                  "summary": "裁剪视频",
+                  "value": {
+                    "operation": "trim",
+                    "processor": "clip",
+                    "parameters": {
+                      "video_path": "/path/to/video.mp4",
+                      "start_time": 10.5,
+                      "end_time": 30.2,
+                      "copy_codec": false
+                    },
+                    "is_async": true
+                  }
+                },
+                "brightness_filter": {
+                  "summary": "亮度调整",
+                  "value": {
+                    "operation": "brightness",
+                    "processor": "filter",
+                    "parameters": {
+                      "video_path": "/path/to/video.mp4",
+                      "level": 20
+                    },
+                    "is_async": true
+                  }
+                },
+                "fade_transition": {
+                  "summary": "淡入淡出转场",
+                  "value": {
+                    "operation": "fade",
+                    "processor": "transition",
+                    "parameters": {
+                      "video1_path": "/path/to/video1.mp4",
+                      "video2_path": "/path/to/video2.mp4",
+                      "duration": 2.0
+                    },
+                    "is_async": true
+                  }
+                },
+                "music_edit": {
+                  "summary": "基于音乐的自动剪辑",
+                  "value": {
+                    "operation": "music_edit",
+                    "processor": "auto",
+                    "parameters": {
+                      "video_paths": [
+                        "/path/to/video1.mp4",
+                        "/path/to/video2.mp4"
+                      ],
+                      "music_path": "/path/to/music.mp3",
+                      "strategy": "rhythm",
+                      "transition_type": "fade",
+                      "transition_duration": 0.5
+                    },
+                    "is_async": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "任务创建成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "任务已创建",
+                  "data": {
+                    "task_id": "685008a3404376ca4660b24a"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["tasks"],
+        "summary": "获取任务列表",
+        "description": "获取当前用户的任务列表，支持分页和过滤",
+        "operationId": "list_tasks",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "running", "completed", "failed", "cancelled"]
+            },
+            "description": "任务状态过滤"
+          },
+          {
+            "name": "operation",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "操作类型过滤"
+          },
+          {
+            "name": "processor",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["clip", "filter", "transition", "auto"]
+            },
+            "description": "处理器过滤"
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "description": "页码"
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 10
+            },
+            "description": "每页数量"
+          },
+          {
+            "name": "ordering",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "-created_at"
+            },
+            "description": "排序字段，'-'前缀表示降序"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取任务列表成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}/status": {
+      "get": {
+        "tags": ["tasks"],
+        "summary": "获取任务状态",
+        "description": "获取指定任务的当前状态",
+        "operationId": "get_task_status",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取任务状态成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}/result": {
+      "get": {
+        "tags": ["tasks"],
+        "summary": "获取任务结果",
+        "description": "获取指定任务的处理结果",
+        "operationId": "get_task_result",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "获取任务结果成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskResultResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取任务结果成功",
+                  "data": {
+                    "task_id": "685008a3404376ca4660b24a",
+                    "status": "completed",
+                    "result": {
+                      "status": "success",
+                      "operation": "trim",
+                      "output_path": "/path/to/trimmed_video_10.5_30.2.mp4",
+                      "duration": 19.7
+                    },
+                    "error": null
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tasks/{task_id}/cancel": {
+      "post": {
+        "tags": ["tasks"],
+        "summary": "取消任务",
+        "description": "取消指定的任务（仅支持pending或running状态的任务）",
+        "operationId": "cancel_task",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "task_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "任务ID"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "任务取消成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskCancelResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/models/": {
+      "get": {
+        "tags": ["models"],
+        "summary": "获取支持的模型列表",
+        "description": "获取系统支持的所有处理器和操作",
+        "operationId": "get_supported_models",
+        "responses": {
+          "200": {
+            "description": "获取模型列表成功",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelsResponse"
+                },
+                "example": {
+                  "success": true,
+                  "message": "获取支持的模型列表成功",
+                  "data": {
+                    "clip": ["trim", "split", "merge", "speed", "reverse"],
+                    "filter": ["brightness", "contrast", "saturation", "blur", "sharpen", "grayscale", "sepia", "vignette"],
+                    "transition": ["fade", "dissolve", "wipe", "slide", "zoom", "rotate", "flash", "crossfade"],
+                    "auto": ["music_edit", "smart_edit", "highlight_edit"]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT Bearer Token 认证"
+      },
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API Key 认证"
+      }
+    },
+    "schemas": {
+      "ResponseBase": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "操作是否成功"
+          },
+          "message": {
+            "type": "string",
+            "description": "响应消息"
+          }
+        }
+      },
+      "UploadFileInfo": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "保存的文件名"
+          },
+          "original_filename": {
+            "type": "string",
+            "description": "原始文件名"
+          },
+          "size": {
+            "type": "integer",
+            "description": "文件大小（字节）"
+          },
+          "content_type": {
+            "type": "string",
+            "description": "文件MIME类型"
+          },
+          "category": {
+            "type": "string",
+            "description": "文件分类"
+          },
+          "media_url": {
+            "type": "string",
+            "description": "媒体URL相对路径"
+          },
+          "full_url": {
+            "type": "string",
+            "description": "媒体文件完整URL"
+          },
+          "download_url": {
+            "type": "string",
+            "description": "下载URL"
+          }
+        }
+      },
+      "UploadResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "$ref": "#/components/schemas/UploadFileInfo"
+              }
+            }
+          }
+        ]
+      },
+      "BatchUploadResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UploadFileInfo"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskCreate": {
+        "type": "object",
+        "required": ["operation", "processor", "parameters"],
+        "properties": {
+          "operation": {
+            "type": "string",
+            "description": "操作类型（如：trim, brightness, fade, music_edit等）"
+          },
+          "processor": {
+            "type": "string",
+            "enum": ["clip", "filter", "transition", "auto"],
+            "description": "处理器名称"
+          },
+          "parameters": {
+            "type": "object",
+            "description": "操作参数（根据不同的operation和processor有不同的参数要求）",
+            "additionalProperties": true
+          },
+          "is_async": {
+            "type": "boolean",
+            "default": true,
+            "description": "是否异步执行"
+          }
+        }
+      },
+      "TaskResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "task_id": {
+                    "type": "string",
+                    "description": "任务ID"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskStatusResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "task_id": {
+                    "type": "string",
+                    "description": "任务ID"
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": ["pending", "running", "completed", "failed", "cancelled"],
+                    "description": "任务状态"
+                  },
+                  "created_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "创建时间"
+                  },
+                  "updated_at": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "更新时间"
+                  },
+                  "retry_count": {
+                    "type": "integer",
+                    "description": "重试次数"
+                  },
+                  "retry_info": {
+                    "type": "string",
+                    "description": "重试信息"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskResultResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "task_id": {
+                    "type": "string",
+                    "description": "任务ID"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "任务状态"
+                  },
+                  "result": {
+                    "type": "object",
+                    "description": "任务结果"
+                  },
+                  "error": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "错误信息"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskListItem": {
+        "type": "object",
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "description": "任务ID"
+          },
+          "status": {
+            "type": "string",
+            "description": "任务状态"
+          },
+          "operation": {
+            "type": "string",
+            "description": "操作类型"
+          },
+          "processor": {
+            "type": "string",
+            "description": "处理器名称"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "创建时间"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "更新时间"
+          }
+        }
+      },
+      "TaskListResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "total": {
+                    "type": "integer",
+                    "description": "总记录数"
+                  },
+                  "page_size": {
+                    "type": "integer",
+                    "description": "每页记录数"
+                  },
+                  "current_page": {
+                    "type": "integer",
+                    "description": "当前页码"
+                  },
+                  "total_pages": {
+                    "type": "integer",
+                    "description": "总页数"
+                  },
+                  "next": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "下一页URL"
+                  },
+                  "previous": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "上一页URL"
+                  },
+                  "tasks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TaskListItem"
+                    },
+                    "description": "任务列表"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "TaskCancelResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "properties": {
+                  "task_id": {
+                    "type": "string",
+                    "description": "任务ID"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ModelsResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ResponseBase"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "object",
+                "description": "按处理器分组的操作列表",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+
